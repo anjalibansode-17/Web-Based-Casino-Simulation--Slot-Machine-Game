@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Slot Machine Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f7f7f7;
+      text-align: center;
+      padding: 30px;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    input {
+      padding: 8px;
+      margin: 10px;
+      width: 200px;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .slot-machine {
+      display: grid;
+      grid-template-columns: repeat(3, 80px);
+      justify-content: center;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .slot-cell {
+      border: 2px solid #333;
+      font-size: 24px;
+      padding: 15px;
+      background-color: #fff;
+      border-radius: 8px;
+    }
+    .message {
+      margin-top: 20px;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Slot Machine Game</h1>
+
+  <div>
+    <input type="number" id="deposit" placeholder="Deposit Amount ($)">
+    <br>
+    <input type="number" id="lines" placeholder="Lines to Bet (1-3)">
+    <br>
+    <input type="number" id="bet" placeholder="Bet per Line ($)">
+    <br>
+    <button onclick="spin()">Spin</button>
+  </div>
+
+  <div class="slot-machine" id="slot-machine">
+  </div>
+
+  <div class="message" id="message"></div>
+
+  <script>
+    const symbolCount = { A: 2, B: 4, C: 6, D: 8 };
+    const symbolValue = { A: 5, B: 4, C: 3, D: 2 };
+
+    let balance = 0;
+
+    function getSlotMachineSpin() {
+      const allSymbols = [];
+      for (const [symbol, count] of Object.entries(symbolCount)) {
+        for (let i = 0; i < count; i++) {
+          allSymbols.push(symbol);
+        }
+      }
+
+      const columns = [];
+      for (let i = 0; i < 3; i++) {
+        const currentSymbols = [...allSymbols];
+        const column = [];
+        for (let j = 0; j < 3; j++) {
+          const randIndex = Math.floor(Math.random() * currentSymbols.length);
+          column.push(currentSymbols.splice(randIndex, 1)[0]);
+        }
+        columns.push(column);
+      }
+
+      return columns;
+    }
+
+    function checkWinnings(columns, lines, bet) {
+      let winnings = 0;
+      const winningLines = [];
+
+      for (let line = 0; line < lines; line++) {
+        const symbol = columns[0][line];
+        if (columns.every(col => col[line] === symbol)) {
+          winnings += symbolValue[symbol] * bet;
+          winningLines.push(line + 1);
+        }
+      }
+
+      if (winnings === 0 && Math.random() < 0.5) {
+        const randomLine = Math.floor(Math.random() * lines);
+        const randSymbol = Object.keys(symbolValue)[Math.floor(Math.random() * 4)];
+        winnings += symbolValue[randSymbol] * bet;
+        winningLines.push(randomLine + 1);
+      }
+
+      return [winnings, winningLines];
+    }
+
+    function spin() {
+      const depositInput = document.getElementById("deposit");
+      const linesInput = document.getElementById("lines");
+      const betInput = document.getElementById("bet");
+      const messageEl = document.getElementById("message");
+
+      const deposit = parseInt(depositInput.value);
+      const lines = parseInt(linesInput.value);
+      const bet = parseInt(betInput.value);
+
+      if (isNaN(deposit) || deposit <= 0) {
+        alert("Please enter a valid deposit amount.");
+        return;
+      }
+
+      if (isNaN(lines) || lines < 1 || lines > 3) {
+        alert("Lines must be between 1 and 3.");
+        return;
+      }
+
+      if (isNaN(bet) || bet < 1 || bet > 100) {
+        alert("Bet must be between $1 and $100.");
+        return;
+      }
+
+      const totalBet = bet * lines;
+
+      if (balance === 0) {
+        balance = deposit;
+      }
+
+      if (totalBet > balance) {
+        alert(`Insufficient balance. You have $${balance}`);
+        return;
+      }
+
+      balance -= totalBet;
+
+      const columns = getSlotMachineSpin();
+
+      const slotMachineEl = document.getElementById("slot-machine");
+      slotMachineEl.innerHTML = "";
+      for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 3; col++) {
+          const cell = document.createElement("div");
+          cell.className = "slot-cell";
+          cell.textContent = columns[col][row];
+          slotMachineEl.appendChild(cell);
+        }
+      }
+
+      const [winnings, winningLines] = checkWinnings(columns, lines, bet);
+      balance += winnings;
+
+      if (winnings > 0) {
+        messageEl.textContent = `You won $${winnings} on lines ${winningLines.join(", ")}. Balance: $${balance}`;
+      } else {
+        messageEl.textContent = `You didn't win. Balance: $${balance}`;
+      }
+    }
+  </script>
+</body>
+</html>
